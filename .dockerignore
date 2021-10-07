@@ -1,0 +1,8 @@
+.yarn
+node_modules
+.git
+extra
+.pnp.js
+LICENSE
+test.js
+./src/example-config.js

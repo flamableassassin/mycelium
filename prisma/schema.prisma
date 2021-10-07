@@ -1,0 +1,40 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Webhook {
+  id    String @id
+  token String
+
+  active         Boolean       @default(true)
+  Subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
+  subscriptionId String?       @db.Uuid
+}
+
+model Subscription {
+  id       String    @id @db.Uuid
+  active   Boolean   @default(true)
+  webhooks Webhook[]
+
+  Accounts Account[]
+}
+
+model Account {
+  id String @id @db.Uuid
+
+  source    String // The name of source function caps don't matter e.g. Twitter
+  name      String // The account name/id such as github
+  due       DateTime @db.Timestamp
+  lastCheck DateTime @db.Timestamp
+  frequency Int? //How often to check the account. Defaults to config default
+
+  subscriptions Subscription[]
+
+  active Boolean @default(true)
+  data   Json    @db.Json // Additional data which can be stored
+}
