@@ -1,19 +1,17 @@
-FROM node:14
+FROM node:16-alpine
 
 WORKDIR /app
+
+ENV NODE_ENV="production"
 
 COPY package*.json ./
 
 RUN npm install --production
 
-RUN npm install -g prisma
+COPY ./prisma /app/prisma
 
-COPY /prisma ./prisma
-
-RUN prisma generate
+RUN npx prisma generate
 
 COPY . /app
-
-ENV NODE_ENV="production"
 
 CMD [ "npm","start" ]
