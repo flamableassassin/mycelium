@@ -6,14 +6,14 @@
   "license": "GPL-3.0",
   "main": "src/index.js",
   "dependencies": {
-    "@prisma/client": "^3.1.1",
-    "node-fetch": "^2.6.1",
-    "rss-parser": "^3.10.0",
-    "twitter-lite": "^1.1.0"
+    "@prisma/client": "^4.2.1",
+    "undici": "^5.10.0",
+    "rss-parser": "^3.12.0",
+    "twitter-api-v2": "^1.12.5",
+    "prisma": "^4.2.1"
   },
   "devDependencies": {
-    "eslint": "^7.20.0",
-    "prisma": "^3.1.1"
+    "eslint": "^8.23.0"
   },
   "scripts": {
     "lint": "eslint --ext \".js\" ./",
@@ -21,7 +21,7 @@
     "start": "node src/index.js"
   },
   "engines": {
-    "node": "14.x"
+    "node": "16.x"
   },
   "repository": {
     "type": "git",
