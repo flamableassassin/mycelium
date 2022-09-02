@@ -1,7 +1,7 @@
-const config = require('./config'),
-  files = require('./util/fileLoader')(),
-  { PrismaClient } = require('@prisma/client'),
-  prisma = new PrismaClient();
+const config = require('./config');
+const files = require('./util/fileLoader')();
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
 /** @type {import("@prisma/client").Account[]} */
 let items = [],
