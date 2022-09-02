@@ -11,30 +11,40 @@ model Webhook {
   id    String @id
   token String
 
-  active         Boolean       @default(true)
-  Subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
-  subscriptionId String?       @db.Uuid
-}
-
-model Subscription {
-  id       String    @id @db.Uuid
-  active   Boolean   @default(true)
-  webhooks Webhook[]
-
-  Accounts Account[]
+  active   Boolean   @default(true) // If the webhook can be used. Can be manually disabled or autmatically disabled if the token is invalid.
+  Accounts Account[] // The webhooks which will by the accounts
 }
 
 model Account {
   id String @id @db.Uuid
 
   source    String // The name of source function caps don't matter e.g. Twitter
-  name      String // The account name/id such as github
-  due       DateTime @db.Timestamp
-  lastCheck DateTime @db.Timestamp
-  frequency Int? //How often to check the account. Defaults to config default
+  name      String // The account name/id which can be used by the function to get the feed. Example: "UCBR8-60-B28hp2BmDPdntcQ" for Youtubes youtube channel
+  lastCheck DateTime @db.Timestamp()
+  frequency Int? // How often to check the account. Defaults to config default
 
-  subscriptions Subscription[]
+  webhooks Webhook[] // The webhooks which the account will be sent to
+
+  jobs Job[]
 
   active Boolean @default(true)
   data   Json    @db.Json // Additional data which can be stored
+}
+
+model Job {
+  id  String   @id @db.Uuid
+  due DateTime @db.Timestamp() // When the job is due to run
+
+  status Status  @default(pending) // The status of the job. If error then the account  won't be checked again.
+  errror String? // The error if the job failed
+
+  account   Account @relation(fields: [accountId], references: [id])
+  accountId String  @db.Uuid
+}
+
+enum Status {
+  pending // Pending checking 
+  inprogress // Checking in progress
+  success // The job was successful
+  error // Error while checking
 }
