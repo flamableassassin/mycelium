@@ -7,10 +7,10 @@
   "main": "src/index.js",
   "dependencies": {
     "@prisma/client": "^4.2.1",
-    "undici": "^5.10.0",
+    "prisma": "^4.2.1",
     "rss-parser": "^3.12.0",
     "twitter-api-v2": "^1.12.5",
-    "prisma": "^4.2.1"
+    "undici": "^5.10.0"
   },
   "devDependencies": {
     "eslint": "^8.23.0"
