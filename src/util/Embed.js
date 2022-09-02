@@ -6,64 +6,63 @@ class Embed {
     return this;
   }
 
-
-  title(title, url = '') {
+  setTitle(title, url = '') {
     this.title = title.toString().substring(0, 256);
     this.url = url;
     return this;
   }
 
-  author(name, icon = '', url = '') {
+  setAuthor(name, icon = '', url = '') {
     this.author = {
-      'name': name.toString().substring(0, 256),
-      'url': url,
-      'icon_url': icon
+      name: name.toString().substring(0, 256),
+      url: url,
+      icon_url: icon
     };
     return this;
   }
 
-  color(color = 9720750) {
+  setColor(color = Math.floor(Math.random() * 16777216)) {
     this.color = (color[0] === '#') ? parseInt(color.replace('#', ''), 16) : color;
     return this;
   }
 
-  timestamp(time = new Date()) {
+  setTimestamp(time = new Date().toISOString()) {
     this.timestamp = time;
     return this;
   }
 
-  thumbnail(image) {
+  setThumbnail(image) {
     this.thumbnail = {
-      'url': image
+      url: image
     };
     return this;
   }
 
-  image(image) {
+  setImage(image) {
     this.image = {
-      'url': image
+      url: image
     };
     return this;
   }
 
-  footer(text, url = '') {
+  setFooter(text, url = '') {
     this.footer = {
-      'icon_url': url,
-      'text': text
+      icon_url: url,
+      text: text
     };
     return this;
   }
 
-  description(value) {
+  setDescription(value) {
     this.description = value.toString().substring(0, 2048);
     return this;
   }
 
   addField(title, value, inline = false) {
     this.fields.push({
-      'name': title.toString().substring(0, 256),
-      'value': value.toString().substring(0, 1024),
-      'inline': inline
+      name: title.toString().substring(0, 256),
+      value: value.toString().substring(0, 1024),
+      inline: inline
     });
     return this;
   }
