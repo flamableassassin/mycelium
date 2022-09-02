@@ -1,6 +1,6 @@
 package-lock.json
 .pnp.js
-test.js
+test*.js
 src/config.js
 db/data.db
 
