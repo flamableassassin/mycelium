@@ -40,7 +40,7 @@ async function pollDB(prisma, now = Date.now()) {
     items = DBdata;
     // --- looping through all the reminders to handle all of the ones which have already passed
     while (items.length !== 0 && items[0].due < now) {
-      let item = items.shift();
+      const item = items.shift();
       handle(prisma, item);
     }
     //
@@ -111,7 +111,7 @@ async function handle(prisma, item) {
 
 
   let failed = false;
-  let file = files.get(item.source);
+  const file = files.get(item.source);
   /** @type {import("./sources/base").sourceReturn} */
   let res;
   try {
@@ -128,8 +128,8 @@ async function handle(prisma, item) {
   if (failed) return;
   DBWebhooks = (await DBWebhooks).flatMap(item => item.webhooks);
   let setWebhooks = sendWebhooks(res.webhooks, DBWebhooks);
-  let updateFrequency = Object.prototype.hasOwnProperty.call(item, 'frequency') ? item.frequency : config.defaultFrequency;
-  let resData = res.data !== undefined ? res.data : {};
+  const updateFrequency = Object.prototype.hasOwnProperty.call(item, 'frequency') ? item.frequency : config.defaultFrequency;
+  const resData = res.data !== undefined ? res.data : {};
   let resTime = res.time !== undefined ? res.time : item.lastCheck; // Defaulting to last check 
 
   // fixing problems caused by an invalid dates being returned;
@@ -215,7 +215,7 @@ async function sendWebhooks(webhooks, DBWebhooks, account) { // eslint-disable-l
         break; // breaking because the token is incorrect
 
       } else if (result.status === 400) {
-        let body = result.text();
+        const body = result.text();
         failed.push({ type: 'body', id: account.source });
         webhooks[l].failed = true; // edting the webhook class so that it can be checked before sending and it also doesn't matter due to the fact that something is wrong with the webhook body
         console.warn(`Incorrect body from source. Source ${account.source}, Res Body: ${await body}`);

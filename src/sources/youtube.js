@@ -17,7 +17,7 @@ module.exports = {
 
     const embeds = [];
     for (let i = 0; i < items.length; i++) {
-      let itemTime = new Date(items[i].isoDate);
+      const itemTime = new Date(items[i].isoDate);
       if (itemTime <= itemsLast) continue;
       if (itemTime > lastTime) lastTime = itemTime;
       // no embed stuff//
@@ -35,18 +35,18 @@ module.exports = {
     }
 
 
-    let webhook = new Webhook()
+    const webhook = new Webhook()
       .setUsername(data.title)
       .setAvater('https://file.coffee/u/WzGykTATtw.png');
 
-    let webhooks = config.accounts[item.account].webhooks;
+    const webhooks = config.accounts[item.account].webhooks;
 
     for (let i = 0; i < embeds.length; i++) {
       if (webhook.embeds.length === 10) {
         for (let l = 0; l < webhooks.length; l++) {
           await webhook.send(webhooks[l]);
         }
-        let webhook = new Webhook()
+        const webhook = new Webhook()
           .setUsername(data.title)
           .setAvater('https://file.coffee/u/WzGykTATtw.png');
       } else webhook.addEmbed(embeds[i]);
