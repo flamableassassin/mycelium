@@ -66,6 +66,13 @@
     "space-in-parens": [
       "warn",
       "never"
+    ],
+    "prefer-const": [
+      "error",
+      {
+        "destructuring": "all",
+        "ignoreReadBeforeAssign": false
+      }
     ]
   }
 }
