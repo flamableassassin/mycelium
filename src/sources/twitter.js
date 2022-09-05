@@ -1,142 +1,141 @@
-const Embed = require('../util/Embed'),
-  Webhook = require('../util/Webhook'),
-  Twitter = require('twitter-lite');
-/**
- * NGL idk what half this stuff does. I did it like 6 months ago at the time of writing (3 October 2021). I tried my best to add comments
- */
+const Embed = require('../util/Embed');
+const Webhook = require('../util/Webhook');
+const { parseTweetFull_text } = require('../util/twitter');
+const { TwitterApi } = require('twitter-api-v2');
+
+
 module.exports = {
   service: 'twitter',
   /**
    * @param {import("@prisma/client").Account} item
+   * @param {import("../config")} config
    * @returns {Promise<import("./base").sourceReturn>}
    */
-  run: async (item, config) => {
-    let webhookTitle = items.find(item => item.user.screen_name === item.account);
-    webhookTitle = webhookTitle !== undefined ? item[webhookTitle].user.name : item.name;
+  execute: async (item, config) => {
+    const client = new TwitterApi(config.secrets);
+
+    // let data = (await client.v1.userTimelineByUsername(item.name, {
+    //   since_id: Math.round(item.lastCheck - 0 / 1000)
+    // })).data;
+    let data = require('../../data.json');
 
 
-    let items = await fetchFeed(item.name, config),
-      lastTime = new Date(item.lastCheck),
-      webhooks = [];
-    const itemsLast = lastTime;
+    if (data.length === 0) return { webhooks: [], newLastCheck: new Date() };
 
-    items = items.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    data = data.sort((a, b) => new Date(a.created_at) - new Date(b.created_at)); // sorting the tweets by date so that the oldest tweet is first
 
+    let webhooks = [];
 
-    for (let i = 0; i < items.length; i++) {
-      let itemTime = new Date(items[i].created_at);
-      if (itemTime <= itemsLast) continue;
-      if (itemTime > lastTime) lastTime = itemTime;
-      const twitterItem = items[i];
-
-      const des = regexStuff(twitterItem);
-      let embed = new Embed()
-        .color('#1DA1F2')
-        .title(twitterItem.user.name, `https://twitter.com/${twitterItem.user.screen_name}/status/${twitterItem.id_str}`)
-        .footer('Sent->')
-        .timestamp(itemTime.toISOString())
-        .description(des)
-        .thumbnail(twitterItem.user.profile_image_url_https);
-      if (Object.prototype.hasOwnProperty.call(twitterItem, 'extended_entities') && Object.prototype.hasOwnProperty.call(twitterItem.extended_entities, 'media')) {
-        let images = twitterItem.extended_entities.media.filter((obj) => obj.type === 'animated_gif' || obj.type === 'photo');
-        for (let l = 0; l < images.length; l++) {
-          embed.image(images[l].media_url_https);
-          addEmbed(embed, webhooks);
-          embed = new Embed()
-            .color('#1DA1F2')
-            .title(twitterItem.user.name, `https://twitter.com/${twitterItem.user.screen_name}/status/${twitterItem.id_str}`)
-            .footer('Sent->')
-            .timestamp(itemTime.toISOString())
-            .description(des)
-            .thumbnail(twitterItem.user.profile_image_url_https);
-        }
-      } else addEmbed(embed, webhooks);
+    for (let i = 0; i < data.length; i++) {
+      webhooks = generateWebhooks(data[i], webhooks);
     }
 
+    return { webhooks, time: new Date(data[data.length - 1].created_at) };
 
-
-    // dealing with webhooks
-    return {
-      webhooks: webhooks,
-      time: lastTime
-    };
-
-    /**
-    * Adds an embed to a webhook or it creates a new one
-    * @param {import("../util/Embed")} embed
-    * @returns {import("../util/Webhook")[]} 
-  */
-    function addEmbed(embed) {
-      if (webhooks.length === 0 || webhooks[webhooks.length - 1].embeds.length >= 10) webhooks.push(new Webhook([embed])
-        .setUsername(`Twitter - @${webhookTitle}`)
-        .setAvatar('https://file.coffee/u/T-jUPyudy9.png'));
-      else webhooks[webhooks.length - 1].addEmbed(embed);
-      return webhooks;
-    }
   }
 };
 
-// From: https://github.com/twitter/twitter-text/blob/33169dfd33d61debdbf58dc940f5a200c06def10/js/pkg/twitter-text-3.1.0.js#L2586-L2592
-const HTML_ENTITIES = {
-  '&amp;': '&',
-  '&gt;': '\>', // eslint-disable-line no-useless-escape
-  '&lt;': '<',
-  '&quot;': '"',
-  '&#39;': '\''
-},
-  urlRegex = /((([A-Za-z]{3,9}:(?:\/\/)?)(?:[-;:&=+$,\w]+@)?[A-Za-z0-9.-]+|(?:www\.|[-;:&=+$,\w]+@)[A-Za-z0-9.-]+)((?:\/[+~%/.\w\-_]*)?\??(?:[-+=&;%@.\w_]*)#?(?:[.!/\\\w]*))?)/,
-  hashTag = /(\B#(\w*[a-zA-Z]+\w*))/g,
-  mentionTag = /(\B@(\w*[a-zA-Z]+\w*))/g,
-  HTML_ENTITIES_REGEX = /(&amp;|&quot;|&gt;|&lt;|&#39;)/g;
 
-// TODO: escape chars like: * | ` _ to prevent it from affecting the formatting of the embed
-function regexStuff(data) {
-  let full_text = data.full_text.replace(HTML_ENTITIES_REGEX, (g1) => HTML_ENTITIES[g1]);
+/**
+ * @param {import("../util//Webhook")[]} webhooks
+ * @param {import("twitter-api-v2").TweetV1} tweet
+ * @param {Boolean} [isQuote = false]
+ * @returns {import("../util//Webhook")[] | import("../util/Embed")}  // Returns an array of webhooks or embeds if the tweet is a retweet
+ */
+function generateWebhooks(tweet, webhooks, isQuote = false) {
+  const embeds = [];
+  const tweetTime = new Date(tweet.created_at);
 
-  if (Object.prototype.hasOwnProperty.call(data, 'retweeted_status')) {
+
+  let des = tweet.full_text;
+
+  if (Object.prototype.hasOwnProperty.call(tweet, 'retweeted_status')) {
     // Retweets
-    const retweetInfo = data.retweeted_status;
-    const des = retweetInfo.full_text
-      .replace(hashTag, (g1) => `[${g1}](https://twitter.com/hashtag/${g1.slice(1)})`)
-      .replace(mentionTag, (g1) => `[${g1}](https://twitter.com/${g1.slice(1)})`)
-      .replace(HTML_ENTITIES_REGEX, (g1) => HTML_ENTITIES[g1]);
+    const retweetInfo = tweet.retweeted_status;
+    const reTweetDes = parseTweetFull_text(retweetInfo.full_text, retweetInfo.entities);
 
-    full_text = `${data.user.name} Retweeted [${retweetInfo.user.screen_name}](https://twitter.com/${retweetInfo.user.screen_name}/status/${retweetInfo.id_str}):\n\n>>> ` + des;
-  } else if (Object.prototype.hasOwnProperty.call(data, 'quoted_status')) {
+    des = `${tweet.user.name} Retweeted [${retweetInfo.user.screen_name}](https://twitter.com/${retweetInfo.user.screen_name}/status/${retweetInfo.id_str}):\n\n>>> ` + reTweetDes;
+
+  } else if (Object.prototype.hasOwnProperty.call(tweet, 'quoted_status')) {
     // Quoted messages
-    const quoteInfo = data.quoted_status;
-    const des = quoteInfo.full_text
-      .replace(hashTag, (g1) => `[${g1}](https://twitter.com/hashtag/${g1.slice(1)})`)
-      .replace(mentionTag, (g1) => `[${g1}](https://twitter.com/${g1.slice(1)})`)
-      .replace(HTML_ENTITIES_REGEX, (g1) => HTML_ENTITIES[g1]);
+    const quoteInfo = tweet.quoted_status;
+    const originalTweetText = parseTweetFull_text(tweet.full_text, tweet.entities).replaceAll('\n', '\n> ');
+    des = `> ${originalTweetText}\n\n${tweet.user.name} Quoted [${quoteInfo.user.screen_name}](https://twitter.com/${quoteInfo.user.screen_name}):`;
 
-    // eslint-disable-next-line no-control-regex
-    full_text = `> ${data.full_text.replace(new RegExp('\n', 'g'), '\n> ').replace(HTML_ENTITIES_REGEX, (g1) => HTML_ENTITIES[g1])}\n\n${data.user.name} Quoted [${quoteInfo.user.screen_name}](https://twitter.com/${quoteInfo.user.screen_name}/status/${quoteInfo.id_str}):\n>>> ` + des;
+    if (isQuote) {
+      const quoteTweetText = parseTweetFull_text(quoteInfo.full_text, tweet.entities);
+      des += `\n\n>>> ${quoteTweetText}`;
+    } else {
+      const quotedWebhooks = generateWebhooks(quoteInfo, webhooks, true);
+      embeds.push(...quotedWebhooks);
+    }
+
   } else {
-    // hyperlinking urls
-    full_text = full_text.replace(urlRegex, (g1) => `[${g1}](${g1})`)
-      // hash tags
-      .replace(hashTag, (g1) => `[${g1}](https://twitter.com/hashtag/${g1.slice(1)})`)
-      // mention tags
-      .replace(mentionTag, (g1) => `[${g1}](https://twitter.com/${g1.slice(1)})`)
-      // Replacing html entities
-      .replace(HTML_ENTITIES_REGEX, (g1) => HTML_ENTITIES[g1]);
+    // Just a normal tweet
+    des = parseTweetFull_text(des, tweet.entities);
+
     // Replies
-    if (data.in_reply_to_status_id !== null) {
-      full_text = `${data.user.name} Replied to [${data.in_reply_to_screen_name}](https://twitter.com/${data.in_reply_to_screen_name}/status/${data.in_reply_to_status_id_str})\n\n>>> ` + full_text;
+    if (tweet.in_reply_to_status_id !== null) {
+      des = `${tweet.user.name} Replied to [${tweet.in_reply_to_screen_name}](https://twitter.com/${tweet.in_reply_to_screen_name}/status/${tweet.in_reply_to_status_id_str})\n\n>>> ` + des;
     }
   }
-  return full_text;
+
+
+  let embed = new Embed()
+    .setColor('#1DA1F2')
+    .setTitle(tweet.user.name, `https://twitter.com/${tweet.user.screen_name}/status/${tweet.id_str}`)
+    .setTimestamp(tweetTime.toISOString())
+    .setDescription(des)
+    .setThumbnail(tweet.user.profile_image_url_https);
+
+  /** @type {import("twitter-api-v2").MediaEntityV1[]} */
+  let media = [];
+
+  if (Object.prototype.hasOwnProperty.call(tweet, 'retweeted_status') && Object.prototype.hasOwnProperty.call(tweet.retweeted_status.extended_entities, 'media')) {
+    media = tweet.retweeted_status.extended_entities.media.filter((obj) => obj.type === 'animated_gif' || obj.type === 'photo');
+  }
+  if (Object.prototype.hasOwnProperty.call(tweet, 'extended_entities') && Object.prototype.hasOwnProperty.call(tweet.extended_entities, 'media')) {
+    media = tweet.extended_entities.media.filter((obj) => obj.type === 'animated_gif' || obj.type === 'photo');
+  }
+
+  if (media.length !== 0) {
+    for (let l = 0; l < media.length; l++) {
+      embed.setImage(media[l].media_url_https);
+      embeds.push(embed);
+      embed = new Embed()
+        .setColor('#1DA1F2')
+        .setTitle(tweet.user.name, `https://twitter.com/${tweet.user.screen_name}/status/${tweet.id_str}`);
+    }
+  } else embeds.push(embed);
+
+
+  if (isQuote) return embeds;
+  return addEmbeds(embeds, webhooks, tweet.user.screen_name);
 }
 
+/**
+   * Adds embeds to a webhook or it creates a new webhook if it doesn't exist
+    * @param {import("../util/Embed")[]} embeds
+    * @param {import("../util//Webhook")[]} webhooks
+    * @param {string} name // The twitter account name
+    * @returns {import("../util/Webhook")[]} 
+   */
+function addEmbeds(embeds, webhooks, name) {
 
-async function fetchFeed(account, config) {
-  const client = new Twitter(config.secrets);
+  // Splitting the embeds which share the same url into their own array 
+  // This is done to prevent the tweets from going across webhooks, keeping the same order while using as few webhooks as possible
 
-  return client.get('statuses/user_timeline', {
-    screen_name: account,
-    exclude_replies: config.exclude_replies ?? true,
-    tweet_mode: 'extended'
-  });
+  /** @type {import("../util/Embed")[][]} */
+  const collections = [];
+  for (let i = 0; i < embeds.length; i++) {
+    const index = collections.findIndex(arr => arr[0]?.url === embeds[i].url);
+    if (index === -1) collections.push([embeds[i]]);
+    else collections[index].push(embeds[i]);
+  }
+
+  for (let i = 0; i < collections.length; i++) {
+    if (webhooks.length === 0 || webhooks[webhooks.length - 1].embeds.length + collections[i].length >= 11) webhooks.push(new Webhook(collections[i]).setUsername(`Twitter - @${name}`).setAvatar('https://file.coffee/u/T-jUPyudy9.png'));
+    else webhooks[webhooks.length - 1].addEmbeds(collections[i]);
+  }
+  return webhooks;
 }
-
