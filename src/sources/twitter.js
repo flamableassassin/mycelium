@@ -1,6 +1,7 @@
 const Embed = require('../util/Embed');
 const Webhook = require('../util/Webhook');
 const { parseTweetFull_text } = require('../util/twitter');
+const addEmbeds = require('../util/embedToWebhook');
 const { TwitterApi } = require('twitter-api-v2');
 
 
@@ -109,32 +110,5 @@ function generateWebhooks(tweet, webhooks, isQuote = false) {
 
 
   if (isQuote) return embeds;
-  return addEmbeds(embeds, webhooks, tweet.user.screen_name);
-}
-
-/**
-   * Adds embeds to a webhook or it creates a new webhook if it doesn't exist
-    * @param {import("../util/Embed")[]} embeds
-    * @param {import("../util//Webhook")[]} webhooks
-    * @param {string} name // The twitter account name
-    * @returns {import("../util/Webhook")[]} 
-   */
-function addEmbeds(embeds, webhooks, name) {
-
-  // Splitting the embeds which share the same url into their own array 
-  // This is done to prevent the tweets from going across webhooks, keeping the same order while using as few webhooks as possible
-
-  /** @type {import("../util/Embed")[][]} */
-  const collections = [];
-  for (let i = 0; i < embeds.length; i++) {
-    const index = collections.findIndex(arr => arr[0]?.url === embeds[i].url);
-    if (index === -1) collections.push([embeds[i]]);
-    else collections[index].push(embeds[i]);
-  }
-
-  for (let i = 0; i < collections.length; i++) {
-    if (webhooks.length === 0 || webhooks[webhooks.length - 1].embeds.length + collections[i].length >= 11) webhooks.push(new Webhook(collections[i]).setUsername(`Twitter - @${name}`).setAvatar('https://file.coffee/u/T-jUPyudy9.png'));
-    else webhooks[webhooks.length - 1].addEmbeds(collections[i]);
-  }
-  return webhooks;
+  return addEmbeds(embeds, webhooks, `Twitter - @${tweet.user.screen_name}`, 'https://file.coffee/u/T-jUPyudy9.png');
 }
