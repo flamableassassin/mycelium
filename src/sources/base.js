@@ -1,8 +1,5 @@
-const {
-  fetchFeed,
-  Embed,
-  Webhook
-} = require('../util');
+const Embed = require('../util/Embed');
+const Webhook = require('../util/Webhook');
 
 module.exports = {
   name: 'name',
@@ -10,7 +7,7 @@ module.exports = {
    * @param {import("@prisma/client").Account} item
    * @returns {Promise<sourceReturn>}
    */
-  run: async (item, config) => {
+  execute: async (item, config) => {
 
     return {
       time: new Date(),
