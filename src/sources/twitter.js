@@ -14,10 +14,9 @@ module.exports = {
   execute: async (item, config) => {
     const client = new TwitterApi(config.secrets);
 
-    // let data = (await client.v1.userTimelineByUsername(item.name, {
-    //   since_id: Math.round(item.lastCheck - 0 / 1000)
-    // })).data;
-    let data = require('../../data.json');
+    let data = (await client.v1.userTimelineByUsername(item.name, {
+      since_id: Math.round(item.lastCheck - 0 / 1000)
+    })).data;
 
 
     if (data.length === 0) return { webhooks: [], newLastCheck: new Date() };
