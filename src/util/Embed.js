@@ -54,7 +54,7 @@ class Embed {
   }
 
   setDescription(value) {
-    this.description = value.toString().substring(0, 2048);
+    this.description = value.toString().substring(0, 4096);
     return this;
   }
 
