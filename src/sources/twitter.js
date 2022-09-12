@@ -1,7 +1,6 @@
 const Embed = require('../util/Embed');
-const Webhook = require('../util/Webhook');
-const { parseTweetFull_text } = require('../util/twitter');
-const addEmbeds = require('../util/embedToWebhook');
+const { twitter } = require('../util/textParsing');
+const addEmbeds = require('../util/embedsToWebhook');
 const { TwitterApi } = require('twitter-api-v2');
 
 
@@ -52,18 +51,18 @@ function generateWebhooks(tweet, webhooks, isQuote = false) {
   if (Object.prototype.hasOwnProperty.call(tweet, 'retweeted_status')) {
     // Retweets
     const retweetInfo = tweet.retweeted_status;
-    const reTweetDes = parseTweetFull_text(retweetInfo.full_text, retweetInfo.entities);
+    const reTweetDes = twitter(retweetInfo.full_text, retweetInfo.entities);
 
     des = `${tweet.user.name} Retweeted [${retweetInfo.user.screen_name}](https://twitter.com/${retweetInfo.user.screen_name}/status/${retweetInfo.id_str}):\n\n>>> ` + reTweetDes;
 
   } else if (Object.prototype.hasOwnProperty.call(tweet, 'quoted_status')) {
     // Quoted messages
     const quoteInfo = tweet.quoted_status;
-    const originalTweetText = parseTweetFull_text(tweet.full_text, tweet.entities).replaceAll('\n', '\n> ');
+    const originalTweetText = twitter(tweet.full_text, tweet.entities).replaceAll('\n', '\n> ');
     des = `> ${originalTweetText}\n\n${tweet.user.name} Quoted [${quoteInfo.user.screen_name}](https://twitter.com/${quoteInfo.user.screen_name}):`;
 
     if (isQuote) {
-      const quoteTweetText = parseTweetFull_text(quoteInfo.full_text, tweet.entities);
+      const quoteTweetText = twitter(quoteInfo.full_text, tweet.entities);
       des += `\n\n>>> ${quoteTweetText}`;
     } else {
       const quotedWebhooks = generateWebhooks(quoteInfo, webhooks, true);
@@ -72,7 +71,7 @@ function generateWebhooks(tweet, webhooks, isQuote = false) {
 
   } else {
     // Just a normal tweet
-    des = parseTweetFull_text(des, tweet.entities);
+    des = twitter(des, tweet.entities);
 
     // Replies
     if (tweet.in_reply_to_status_id !== null) {
