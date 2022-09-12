@@ -5,7 +5,7 @@ module.exports = {
   name: 'name',
   /**
    * @param {import("@prisma/client").Account} item
-   * @returns {Promise<sourceReturn>}
+   * @returns {Promise<import("./base").sourceReturn>}
    */
   execute: async (item, config) => {
 
@@ -19,7 +19,7 @@ module.exports = {
 /**
  * The return data for a source file
  * @typedef {Object} sourceReturn
- * @property {import("../util/Webhook")[]} [webhooks] webhooks which need to be sent
+ * @property {import("../util/Webhook")[]} webhooks webhooks which need to be sent
  * @property {JSON} [data] Data to be pushed to the db
  * @property {Date} [time] The time of the last item
  */
