@@ -1,62 +1,47 @@
-const fetch = require('node-fetch');
-const {
-  fetchFeed,
-  Embed,
-  Webhook
-} = require('../util');
+const { fetch } = require('undici');
+const { youtube } = require('../util/textParsing');
+const Embed = require('../util/Embed');
+const embedToWebhook = require('../util/embedsToWebhooks');
+const xmlParser = new (require('fast-xml-parser').XMLParser);
 
 module.exports = {
   service: 'youtube',
-  run: async (item, config) => {
-    const url = `https://www.youtube.com/feeds/videos.xml?channel_id=${config.accounts[item.account].youtube}`;
-    const data = await fetchFeed(url);
-    // filtering out outdated items
-    let lastTime = new Date(item.lastTime);
-    const itemsLast = lastTime;
-    const items = data.items.sort((a, b) => new Date(a.isoDate) - new Date(b.isoDate));
+  /**
+   * @param {import("@prisma/client").Account} item
+   * @returns {Promise<import("./base").sourceReturn>}
+   */
+  execute: async (item, config) => {
+    const url = `https://www.youtube.com/feeds/videos.xml?channel_id=${item.name}`;
+
+    const feed = await (await fetch(url)).text();
+    const data = xmlParser.parse(feed.toString());
+
+    const inputData = data.feed;
+    const entries = inputData.entry
+      .filter(i => new Date(i.published) > item.lastCheck) // filter out old videos
+      .sort((a, b) => new Date(a.published) - new Date(b.published)); // sorting the tweets by date so that the oldest video is first
 
     const embeds = [];
-    for (let i = 0; i < items.length; i++) {
-      const itemTime = new Date(items[i].isoDate);
-      if (itemTime <= itemsLast) continue;
-      if (itemTime > lastTime) lastTime = itemTime;
-      // no embed stuff//
-      let vid = await fetch('https://noembed.com/embed?url=' + items[i].link);
-      vid = await vid.json();
-      // embed
+    for (let i = 0; i < entries.length; i++) {
+      const item = entries[i];
       const embed = new Embed()
-        .color('#FF0000')
-        .author(vid.author_name, undefined, vid.author_url)
-        .title(vid.title, vid.url)
-        .image(vid.thumbnail_url)
-        .footer('Uploaded ->')
-        .timestamp(items[i].isoDate);
+        .setColor('#FF0000')
+        .setAuthor(item.author.name, undefined, item.author.uri)
+        .setTitle(item.title, `https://www.youtube.com/watch?v=${item['yt:videoId']}`)
+        .setImage(`https://i.ytimg.com/vi/${item['yt:videoId']}/hqdefault.jpg`)
+        .setTimestamp(item.published);
+
+      let description = youtube(item['media:group']['media:description']);
+      const length = 250;
+      if (description.length >= length) description = description.substring(0, length).split(' ').slice(0, -1).join(' ') + '...';
+
+      embed.setDescription(description);
       embeds.push(embed);
     }
 
-
-    const webhook = new Webhook()
-      .setUsername(data.title)
-      .setAvater('https://file.coffee/u/WzGykTATtw.png');
-
-    const webhooks = config.accounts[item.account].webhooks;
-
-    for (let i = 0; i < embeds.length; i++) {
-      if (webhook.embeds.length === 10) {
-        for (let l = 0; l < webhooks.length; l++) {
-          await webhook.send(webhooks[l]);
-        }
-        const webhook = new Webhook()
-          .setUsername(data.title)
-          .setAvater('https://file.coffee/u/WzGykTATtw.png');
-      } else webhook.addEmbed(embeds[i]);
-    }
-
-    for (let i = 0; i < webhooks.length; i++) {
-      webhook.send(webhooks[i]);
-    }
     return {
-      time: lastTime
+      webhooks: embedToWebhook(embeds, [], inputData.author.name, 'https://file.coffee/u/WzGykTATtw.png'),
+      time: new Date(entries[entries.length - 1].published)
     };
   }
 };
