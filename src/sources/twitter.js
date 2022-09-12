@@ -1,6 +1,6 @@
 const Embed = require('../util/Embed');
 const { twitter } = require('../util/textParsing');
-const addEmbeds = require('../util/embedsToWebhook');
+const addEmbeds = require('../util/embedsToWebhooks');
 const { TwitterApi } = require('twitter-api-v2');
 
 
