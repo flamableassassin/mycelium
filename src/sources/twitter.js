@@ -48,14 +48,14 @@ function generateWebhooks(tweet, webhooks, isQuote = false) {
 
   let des = tweet.full_text;
 
-  if (Object.prototype.hasOwnProperty.call(tweet, 'retweeted_status')) {
+  if (tweet.hasOwn('retweeted_status')) {
     // Retweets
     const retweetInfo = tweet.retweeted_status;
     const reTweetDes = twitter(retweetInfo.full_text, retweetInfo.entities);
 
     des = `${tweet.user.name} Retweeted [${retweetInfo.user.screen_name}](https://twitter.com/${retweetInfo.user.screen_name}/status/${retweetInfo.id_str}):\n\n>>> ` + reTweetDes;
 
-  } else if (Object.prototype.hasOwnProperty.call(tweet, 'quoted_status')) {
+  } else if (tweet.hasOwn('quoted_status')) {
     // Quoted messages
     const quoteInfo = tweet.quoted_status;
     const originalTweetText = twitter(tweet.full_text, tweet.entities).replaceAll('\n', '\n> ');
@@ -90,10 +90,10 @@ function generateWebhooks(tweet, webhooks, isQuote = false) {
   /** @type {import("twitter-api-v2").MediaEntityV1[]} */
   let media = [];
 
-  if (Object.prototype.hasOwnProperty.call(tweet, 'retweeted_status') && Object.prototype.hasOwnProperty.call(tweet.retweeted_status.extended_entities, 'media')) {
+  if (tweet.hasOwn('retweeted_status') && tweet.retweeted_status.extended_entities.hasOwn('media')) {
     media = tweet.retweeted_status.extended_entities.media.filter((obj) => obj.type === 'animated_gif' || obj.type === 'photo');
   }
-  if (Object.prototype.hasOwnProperty.call(tweet, 'extended_entities') && Object.prototype.hasOwnProperty.call(tweet.extended_entities, 'media')) {
+  if (tweet.hasOwn('extended_entities') && tweet.extended_entities.hasOwn('media')) {
     media = tweet.extended_entities.media.filter((obj) => obj.type === 'animated_gif' || obj.type === 'photo');
   }
 
