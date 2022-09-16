@@ -6,3 +6,5 @@ extra
 LICENSE
 test.js
 ./src/example-config.js
+.github
+.vscode
