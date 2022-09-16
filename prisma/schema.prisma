@@ -12,7 +12,7 @@ model Webhook {
   token String
 
   active   Boolean   @default(true) // If the webhook can be used. Can be manually disabled or autmatically disabled if the token is invalid.
-  Accounts Account[] // The webhooks which will by the accounts
+  accounts Account[] // The webhooks which will by the accounts
 }
 
 model Account {
@@ -27,7 +27,7 @@ model Account {
 
   jobs Job[]
 
-  active Boolean @default(true)
+  active Boolean @default(true) // Look at the jobs to see the reason why it was disabled
   data   Json    @db.Json // Additional data which can be stored
 }
 
