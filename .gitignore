@@ -4,6 +4,11 @@ test*.js
 src/config.js
 db/data.db
 
+src/modifiers/youtube/*
+src/modifiers/twitter/*
+!src/modifiers/twitter/base.js
+!src/modifiers/youtube/base.js
+
 # Logs
 logs
 *.log
