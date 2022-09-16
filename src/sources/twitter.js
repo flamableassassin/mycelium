@@ -8,10 +8,11 @@ module.exports = {
   service: 'twitter',
   /**
    * @param {import("@prisma/client").Account} item
+   * @param {import("../util//Webhook")[]} webhooks
    * @param {import("../config")} config
    * @returns {Promise<import("./base").sourceReturn>}
    */
-  execute: async (item, config) => {
+  execute: async (item, webhooks, config) => {
     const client = new TwitterApi(config.secrets);
 
     let data = (await client.v1.userTimelineByUsername(item.name, {
@@ -23,7 +24,6 @@ module.exports = {
 
     data = data.sort((a, b) => new Date(a.created_at) - new Date(b.created_at)); // sorting the tweets by date so that the oldest tweet is first
 
-    let webhooks = [];
 
     for (let i = 0; i < data.length; i++) {
       webhooks = generateWebhooks(data[i], webhooks);

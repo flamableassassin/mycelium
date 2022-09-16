@@ -2,12 +2,13 @@ const Embed = require('../util/Embed');
 const Webhook = require('../util/Webhook');
 
 module.exports = {
-  name: 'name',
+  service: 'name',
   /**
    * @param {import("@prisma/client").Account} item
+   * @param {import("../util//Webhook")[]} webhooks
    * @returns {Promise<import("./base").sourceReturn>}
    */
-  execute: async (item, config) => {
+  execute: async (item, webhooks, config) => {
 
     return {
       time: new Date(),

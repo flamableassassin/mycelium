@@ -8,9 +8,10 @@ module.exports = {
   service: 'youtube',
   /**
    * @param {import("@prisma/client").Account} item
+   * @param {import("../util//Webhook")[]} webhooks
    * @returns {Promise<import("./base").sourceReturn>}
    */
-  execute: async (item, config) => {
+  execute: async (item, webhooks, config) => {
     const url = `https://www.youtube.com/feeds/videos.xml?channel_id=${item.name}`;
 
     const feed = await (await fetch(url)).text();
@@ -40,7 +41,7 @@ module.exports = {
     }
 
     return {
-      webhooks: embedToWebhook(embeds, [], inputData.author.name, 'https://file.coffee/u/WzGykTATtw.png'),
+      webhooks: embedToWebhook(embeds, webhooks, inputData.author.name, 'https://file.coffee/u/WzGykTATtw.png'),
       time: new Date(entries[entries.length - 1].published)
     };
   }
