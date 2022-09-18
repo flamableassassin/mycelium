@@ -8,9 +8,10 @@ module.exports = {
    * @async
    * @param {Object[]} data
    * @param {import("../../util/Webhook")[]} webhooks
+   * @param {import("../../config")} config
    * @return {Promise<import("../../util/Webhook")[]>}
    */
-  execute: async (data, webhooks) => {
+  execute: async (data, webhooks, config) => {
 
   }
 };

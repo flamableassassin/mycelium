@@ -29,7 +29,11 @@ module.exports = {
       webhooks = generateWebhooks(data[i], webhooks);
     }
 
-    return { webhooks, time: new Date(data[data.length - 1].created_at) };
+    return {
+      webhooks,
+      time: new Date(data[data.length - 1].created_at),
+      items: data
+    };
 
   }
 };

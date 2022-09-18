@@ -42,6 +42,7 @@ module.exports = {
 
     return {
       webhooks: embedToWebhook(embeds, webhooks, inputData.author.name, 'https://file.coffee/u/WzGykTATtw.png'),
+      items: entries,
       time: new Date(entries[entries.length - 1].published)
     };
   }

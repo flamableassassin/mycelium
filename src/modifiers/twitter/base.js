@@ -9,10 +9,10 @@ module.exports = {
    * @async
    * @param {import("twitter-api-v2").TweetV1} tweets
    * @param {import("../../util/Webhook")[]} webhooks
-   * @param {import("twitter-api-v2").TwitterApi} client
+   * @param {import("../../config")} config
    * @return {Promise<import("../../util/Webhook")[]>}
    */
-  execute: async (tweets, webhooks, client) => {
+  execute: async (tweets, webhooks, config) => {
 
   }
 };

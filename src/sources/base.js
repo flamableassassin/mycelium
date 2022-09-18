@@ -21,6 +21,7 @@ module.exports = {
  * The return data for a source file
  * @typedef {Object} sourceReturn
  * @property {import("../util/Webhook")[]} webhooks webhooks which need to be sent
+ * @property {unknown[]} items The items which have been fetched by the source file
  * @property {JSON} [data] Data to be pushed to the db
  * @property {Date} [time] The time of the last item
  */
