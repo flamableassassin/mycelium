@@ -10,10 +10,10 @@ const path = require('path');
  */
 module.exports.source = () => {
   const data = new Map();
-  const files = readdirSync(path.join(__dirname, '../sources')).filter(file => file.endsWith('.js') && file !== 'base.js');
+  const files = readdirSync(path.join(__dirname, '..', 'sources')).filter(file => file.endsWith('.js') && file !== 'base.js');
   for (const file of files) {
-    const fileData = require(path.join(__dirname + '../sources/', file));
-    if (!fileData.hasOwn('execute')) continue;
+    const fileData = require(path.join(__dirname + '/..', 'sources', file));
+    if (!Object.hasOwn(fileData, 'execute')) continue;
     data.set(fileData.service, fileData);
   }
   return data;
@@ -31,8 +31,8 @@ module.exports.modifiers = () => {
   for (const folder of dirs) {
     const sub_folder = readdirSync(path.join(__dirname, '..', 'modifiers', folder)).filter(file => file.endsWith('.js'));
     for (const files of sub_folder) {
-      const modifier = require(path.join(__dirname, '..', 'modifiers', folder, files));
-      if (!modifier.hasOwn('execute')) continue;
+      const modifier = require(path.join(__dirname, '/..', 'modifiers', folder, files));
+      if (!Object.hasOwn(modifier, 'execute')) continue;
       data.set(`${folder}-${modifier.name}`, modifier); // adding the folder name to the key so that there are no conflicts
     }
   }
