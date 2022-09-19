@@ -193,7 +193,7 @@ async function handler(prisma, item, config) {
 
 
 
-  let setWebhooks = sendWebhooks(res.webhooks, webhooks);
+  const setWebhooks = sendWebhooks(res.webhooks, webhooks);
 
   const updateFrequency = item.hasOwn('frequency') ? item.frequency : config.defaultFrequency;
   const resData = res.data !== undefined ? res.data : {};
@@ -231,8 +231,8 @@ async function handler(prisma, item, config) {
     },
     create: {
       data: {
-        status: statusEnums.pending,
-        due: Date.now() + updateFrequency
+        due: Date.now() + updateFrequency,
+        status: statusEnums.pending
       }
     }
   };
@@ -248,23 +248,28 @@ async function handler(prisma, item, config) {
   }
 
   // deleting any 
-  setWebhooks = await setWebhooks;
-  if (setWebhooks.length === 0) return;
+  const sentWebhooks = await setWebhooks;
+  if (sentWebhooks.length === 0) return;
 
-  // deleting any webhooks which returned 404
-  await prisma.webhook.deleteMany({
-    where: {
-      OR: (await setWebhooks).filter(i => i.type === 'webhook').map(i => ({ id: i }))
-    }
-  });
 
-  // deactivating webhooks which returned 401
-  await prisma.webhook.updateMany({
+  await prisma.account.update({
     where: {
-      OR: (await setWebhooks).filter(i => i.type === 'webhook-token').map(i => ({ id: i }))
+      id: item.id
     },
     data: {
-      active: false
+      webhooks: {
+        deleteMany: {
+          OR: sentWebhooks.filter(i => i.status === 404).map(i => ({ id: i }))
+        },
+        updateMany: {
+          where: {
+            OR: sentWebhooks.filter(i => i.status === 401).map(i => ({ id: i }))
+          },
+          data: {
+            active: false
+          }
+        }
+      }
     }
   });
 }
@@ -283,6 +288,7 @@ async function sendWebhooks(webhooks, DBWebhooks, account) { // eslint-disable-l
   const failed = []; // used to find out where any errors are coming from and preventing it in the future and preventing resources from being wasted
 
   for (let l = 0; l < webhooks.length; l++) { // looping over webhooks from the source
+    let sourceFailed = false;
 
     for (let i = 0; i < DBWebhooks.length; i++) { // looping over webhooks stored in the database
       if (webhooks[l].failed === true) continue;
@@ -297,23 +303,24 @@ async function sendWebhooks(webhooks, DBWebhooks, account) { // eslint-disable-l
       }
 
       if (result.status === 404) {
-        failed.push({ type: 'webhook', id: DBWebhooks[i].id });
-        console.warn(`Webhook deleted. ID: ${DBWebhooks[i].id}, SUB-ID: ${DBWebhooks[i].subscriptionId}`);
+        failed.push({ type: 'webhook', status: 404, id: DBWebhooks[i].id });
+        console.warn(`Webhook deleted. ID: ${DBWebhooks[i].id}`);
         break; // breaking because the webhook doesn't exist
 
       } else if (result.status === 401) {
-        failed.push({ type: 'webhook-token', id: DBWebhooks[i].id });
-        console.warn(`Incorrect webhook token. Webhook ID: ${DBWebhooks[i].id}, SUB-ID: ${DBWebhooks[i].subscriptionId}`);
+        failed.push({ type: 'webhook-token', status: 401, id: DBWebhooks[i].id });
+        console.warn(`Incorrect webhook token. Webhook ID: ${DBWebhooks[i].id}`);
         break; // breaking because the token is incorrect
 
       } else if (result.status === 400) {
+        sourceFailed = true;
         const body = result.text();
-        failed.push({ type: 'body', id: account.source });
+        failed.push({ type: 'body', status: 400, id: account.source });
         webhooks[l].failed = true; // editing the webhook class so that it can be checked before sending and it also doesn't matter due to the fact that something is wrong with the webhook body
-        console.warn(`Incorrect body from source. Source ${account.source}, Res Body: ${await body}`);
-
+        console.warn(`Incorrect body from source.Source ${account.source}, Res Body: ${await body} `);
       } else if (!result.ok) console.error(result.text());
     }
+    if (sourceFailed) continue;
   }
 }
 
@@ -321,6 +328,8 @@ async function sendWebhooks(webhooks, DBWebhooks, account) { // eslint-disable-l
  * @typedef failedWebhooks
  * @property {String} type Where it failed E.g. body
  * @property {String} id Away to single out where the problem came from such as the webhook id
+ * @property {Boolean} failed Whether the webhook failed or not
+ * @property {Number} status The status code from the request
  */
 
 
