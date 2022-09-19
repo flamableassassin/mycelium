@@ -18,7 +18,7 @@ const { Status: statusEnums } = require('@prisma/client');
 /** @type {item[]} */
 let items = [];
 let currentTimeOut;
-
+pollDB(prisma);
 setInterval(async function () {
   const now = Date.now();
   // ---  runs every 10 mins//
@@ -40,7 +40,7 @@ async function pollDB(prisma, now = Date.now()) {
   const dbData = await prisma.job.findMany({
     where: {
       due: {
-        lt: now + 600000 // 10 mins 
+        lt: new Date(now + 600000) // 10 mins 
       },
       status: statusEnums.pending
     },
@@ -144,6 +144,7 @@ async function handler(prisma, item, config) {
 
   const webhooks = await prisma.webhook.findMany({
     where: {
+      active: true,
       accounts: {
         every: {
           id: item.id
