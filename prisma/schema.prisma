@@ -19,7 +19,7 @@ model Account {
   id String @id @default(uuid()) @db.Uuid
 
   source    String // The name of source function caps don't matter e.g. Twitter
-  name      String // The account name/id which can be used by the function to get the feed. Example: "UCBR8-60-B28hp2BmDPdntcQ" for Youtubes youtube channel
+  name      String // The account name/id which can be used by the function to get the feed. Example: "UCBR8-60-B28hp2BmDPdntcQ" for Youtubes own youtube channel
   lastCheck DateTime @db.Timestamp()
   frequency Int? // How often to check the account. Defaults to config default
 
