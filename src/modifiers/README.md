@@ -5,3 +5,7 @@ This directory holds file which can modify the webhooks before they are sent. I 
 #### Why?
 
 When I originally built this system for my client they wanted me to add a twitter bot to it and so I did. However, the bot was tweeting every 30 minutes and was filling up the chat. I added a little modifier to the twitter source file so that it would fetch every 4 hours and would remove all tweets bar 1. This system worked for me internally. But, it wouldn\'t work for an open source project, because I don't think its necessary to alter the source files for something niche. With this basic modifiers system I\'m able to actually add more, internally I'm going to use this system to allow me add more embeds with comments.
+
+#### Note:
+
+All files inside of the directories called "base.js" will be ignored by the file loader
