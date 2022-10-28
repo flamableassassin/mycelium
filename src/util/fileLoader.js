@@ -27,13 +27,13 @@ module.exports.source = () => {
 module.exports.modifiers = () => {
   const data = new Map();
   const dirs = readdirSync(path.join(__dirname, '..', 'modifiers')).filter((file) => statSync(path.join(__dirname, '..', 'modifiers', file)).isDirectory());
-
   for (const folder of dirs) {
-    const sub_folder = readdirSync(path.join(__dirname, '..', 'modifiers', folder)).filter(file => file.endsWith('.js'));
-    for (const files of sub_folder) {
-      const modifier = require(path.join(__dirname, '/..', 'modifiers', folder, files));
+    const sub_folder = readdirSync(path.join(__dirname, '..', 'modifiers', folder)).filter(file => file.endsWith('.js') && file != 'base.js');
+    for (const file of sub_folder) {
+      const modifier = require(path.join(__dirname, '/..', 'modifiers', folder, file));
       if (!Object.hasOwn(modifier, 'execute')) continue;
       data.set(`${folder}-${modifier.name}`, modifier); // adding the folder name to the key so that there are no conflicts
     }
   }
+  return data;
 };
