@@ -23,8 +23,8 @@ const twitterURLRegex = /(https:\/\/t.co\/(\w+))/g;
  */
 
 module.exports.youtube = (description) => description
-  .replace(tagRegex, (g1, g2) => `[${g1 + g2}](https://www.youtube.com/${g2 === '#' ? `hashtag/${g2}` : `search?query=${g2}`})`)
   .replace(urlRegex, (g1) => `[${g1}](${g1})`)
+  .replace(tagRegex, (g1, g2, g3) => `[${g1}](https://www.youtube.com/${g2 === '#' ? `hashtag/${g3}` : `search?query=${g3}`})`)
   .replace(HTML_ENTITIES_REGEX, (g1) => HTML_ENTITIES[g1])
   .trim();
 
