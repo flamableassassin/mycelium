@@ -36,7 +36,7 @@ model Job {
   due DateTime @db.Timestamp() // When the job is due to run
 
   status Status  @default(pending) // The status of the job. If error then the account  won't be checked again.
-  errror String? // The error if the job failed
+  error  String? // The error if the job failed
 
   account   Account @relation(fields: [accountId], references: [id])
   accountId String  @db.Uuid
