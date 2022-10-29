@@ -17,8 +17,12 @@ const { Status: statusEnums } = require('@prisma/client');
 // The first item in the array is the one which is due next and so on
 /** @type {item[]} */
 let items = [];
+/** @type {String[]} */
+const inprogress = []; // An array of all the jobs ids which are currently being processed
 let currentTimeOut;
 pollDB(prisma);
+
+
 setInterval(async function () {
   const now = Date.now();
   // ---  runs every 10 mins//
@@ -30,7 +34,6 @@ setInterval(async function () {
 }, 60000); // 1 min
 
 
-// TODO: Check to see if the timeout is being cleared on each poll
 /**
  * @param {import("@prisma/client").PrismaClient} prisma
  */
@@ -80,9 +83,9 @@ async function pollDB(prisma, now = Date.now()) {
   });
 
   for (let i = 0; i < alreadyPassed.length; i++) {
-    const item = alreadyPassed[i];
+    const item = alreadyPassed.shift();
+    console.log('Sending to handler ' + item.jobID);
     handler(prisma, item, config);
-    alreadyPassed[i];
   }
 
 
@@ -115,13 +118,14 @@ function createTimeout(prisma) {
 
 
 
-// TODO: fucking finish this shet
 /**
  * @param {import("@prisma/client").PrismaClient} prisma
  * @param {import("./index").item} item
  * @param {import("./config")} config
  */
 async function handler(prisma, item, config) {
+  if (inprogress.includes(item.jobID)) return console.warn('Job already in progress, ID: ' + item.jobID);
+  inprogress.push(item.jobID);
   if (!files.has(item.source)) return prisma.account.update({
     where: {
       id: item.id
@@ -180,22 +184,26 @@ async function handler(prisma, item, config) {
   /** @type {import("./sources/base").sourceReturn} */
   let res;
   try {
-    res = await file.execute(item, webhooks, config.plugins[item.source]);
+    res = await file.execute(item, [], config.plugins[item.source]);
 
-    if (res.items.length !== 0 && modifiers.has(item.source + '-' + item.name)) res = await (modifiers.get(item.source + '-' + item.name)).execute(res.items, webhooks, config.plugins[item.source]);
+    if (res.items.length !== 0 && modifiers.has(item.source + '-' + item.name)) res = await (modifiers.get(item.source + '-' + item.name)).execute(res.items, res.webhooks, config.plugins[item.source]);
 
   } catch (e) {
     failed = true;
     console.error('Handler error, ', e, {
+      jobID: item.jobID,
       source: item.source,
       accountName: item.name
     });
   }
+  // TODO Fix error handling to update the job status and add the error msg
 
+  let sentWebhooks;
+  if (!failed) {
+    console.log('sending webhooks');
+    sentWebhooks = sendWebhooks(res.webhooks, webhooks);
 
-
-  const setWebhooks = sendWebhooks(res.webhooks, webhooks);
-
+  }
   const updateFrequency = !item.frequency ? config.defaultFrequency : item.frequency;
   const resData = res.data !== undefined ? res.data : {};
   let resTime = res.time !== undefined ? res.time : item.lastCheck; // Defaulting to last check 
@@ -231,17 +239,20 @@ async function handler(prisma, item, config) {
       id: item.jobID
     },
     create: {
-      data: {
-        due: Date.now() + updateFrequency,
-        status: statusEnums.pending
-      }
+      due: new Date(Date.now() + updateFrequency),
+      status: statusEnums.pending
     }
   };
 
+
+  // items.shift(); // removing the current item from the items array
+  const t = await prisma.account.update(query);
+  console.log(t);
   /*
   making sure that the updateFrequency is less than 10 mins if it is below 10 mins its added to the upcoming checks
   and if the updateFrequency is less than 1 min it becomes a timeout
-*/
+  */
+  inprogress.splice(inprogress.indexOf(item.jobID), 1); // removing the job from the inprogress array
   if (updateFrequency < 600000) {
     items.push(item);
     if (items.length !== 1) items.sort((first, second) => first.due - second.due);
@@ -249,30 +260,32 @@ async function handler(prisma, item, config) {
   }
 
   // deleting any 
-  const sentWebhooks = await setWebhooks;
-  if (sentWebhooks.length === 0) return;
+  if (!failed) {
+    sentWebhooks = await sentWebhooks;
+    if (sentWebhooks.length === 0) return;
 
-
-  await prisma.account.update({
-    where: {
-      id: item.id
-    },
-    data: {
-      webhooks: {
-        deleteMany: {
-          OR: sentWebhooks.filter(i => i.status === 404).map(i => ({ id: i }))
-        },
-        updateMany: {
-          where: {
-            OR: sentWebhooks.filter(i => i.status === 401).map(i => ({ id: i }))
+    await prisma.account.update({
+      where: {
+        id: item.id
+      },
+      data: {
+        webhooks: {
+          deleteMany: {
+            OR: sentWebhooks.filter(i => i.status === 404).map(i => ({ id: i }))
           },
-          data: {
-            active: false
+          updateMany: {
+            where: {
+              OR: sentWebhooks.filter(i => i.status === 401).map(i => ({ id: i }))
+            },
+            data: {
+              active: false
+            }
           }
         }
       }
-    }
-  });
+    });
+  }
+
 }
 
 
@@ -323,6 +336,7 @@ async function sendWebhooks(webhooks, DBWebhooks, account) { // eslint-disable-l
     }
     if (sourceFailed) continue;
   }
+  return failed;
 }
 
 /**
@@ -332,8 +346,6 @@ async function sendWebhooks(webhooks, DBWebhooks, account) { // eslint-disable-l
  * @property {Boolean} failed Whether the webhook failed or not
  * @property {Number} status The status code from the request
  */
-
-
 
 
 /**
