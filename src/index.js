@@ -38,6 +38,7 @@ setInterval(async function () {
  * @param {import("@prisma/client").PrismaClient} prisma
  */
 async function pollDB(prisma, now = Date.now()) {
+  console.log('Polling DB');
   // polling Prisma
   /** @type {(import("@prisma/client").Job & {account: import("@prisma/client").Account})[]} */
   const dbData = await prisma.job.findMany({
@@ -124,6 +125,7 @@ function createTimeout(prisma) {
  * @param {import("./config")} config
  */
 async function handler(prisma, item, config) {
+  console.log('Handling ' + item.jobID);
   if (inprogress.includes(item.jobID)) return console.warn('Job already in progress, ID: ' + item.jobID);
   inprogress.push(item.jobID);
   if (!files.has(item.source)) return prisma.account.update({
