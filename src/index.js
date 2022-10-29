@@ -196,7 +196,7 @@ async function handler(prisma, item, config) {
 
   const setWebhooks = sendWebhooks(res.webhooks, webhooks);
 
-  const updateFrequency = !item.frequency ? item.frequency : config.defaultFrequency;
+  const updateFrequency = !item.frequency ? config.defaultFrequency : item.frequency;
   const resData = res.data !== undefined ? res.data : {};
   let resTime = res.time !== undefined ? res.time : item.lastCheck; // Defaulting to last check 
 
