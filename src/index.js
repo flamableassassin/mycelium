@@ -188,7 +188,7 @@ async function handler(prisma, item, config) {
   try {
     res = await file.execute(item, [], config.plugins[item.source]);
 
-    if (res.items.length !== 0 && modifiers.has(item.source + '-' + item.name)) res = await (modifiers.get(item.source + '-' + item.name)).execute(res.items, res.webhooks, config.plugins[item.source]);
+    if (res.items.length !== 0 && modifiers.has(item.source + '-' + item.name)) res = await (modifiers.get(item.source + '-' + item.name)).execute(res, config.plugins[item.source]);
 
   } catch (e) {
     failed = true;
