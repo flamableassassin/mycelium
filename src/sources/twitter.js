@@ -15,10 +15,11 @@ module.exports = {
   execute: async (item, webhooks, config) => {
     const client = new TwitterApi(config.secrets);
 
-    let data = (await client.v1.userTimelineByUsername(item.name, {
-      since_id: Math.round(item.lastCheck - 0 / 1000)
-    })).data;
+    if (item.lastCheck - 0 === 0) item.lastCheck = 1; // Twitter will return an error if since_id param is 0
 
+    let data = (await client.v1.userTimelineByUsername(item.name, {
+      since_id: Math.round(item.lastCheck - 0 / 1000).toString()
+    })).data;
 
     if (data.length === 0) return { webhooks: [], newLastCheck: new Date() };
 
