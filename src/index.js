@@ -152,7 +152,7 @@ async function handler(prisma, item, config) {
     where: {
       active: true,
       accounts: {
-        every: {
+        some: {
           id: item.id
         }
       }
@@ -207,8 +207,8 @@ async function handler(prisma, item, config) {
 
   }
   const updateFrequency = !item.frequency ? config.defaultFrequency : item.frequency;
-  const resData = res.data !== undefined ? res.data : {};
-  let resTime = res.time !== undefined ? res.time : item.lastCheck; // Defaulting to last check 
+  const resData = res?.data !== undefined ? res.data : {};
+  let resTime = res?.time !== undefined ? res.time : item.lastCheck; // Defaulting to last check 
 
   // fixing problems caused by an invalid dates being returned;
   if (!(resTime instanceof Date) && isNaN(resTime)) resTime = item.lastCheck;
